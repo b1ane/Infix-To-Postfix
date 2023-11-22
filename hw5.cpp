@@ -1,6 +1,8 @@
 #include <iostream> 
 #include <string>
 #include <fstream>
+#include <iomanip>
+#include <cmath>
 using namespace std;
 //Part One: Create Stack class
 struct node{
@@ -55,6 +57,63 @@ class Stack{
         }
     }
 };
+
+struct nodeDouble {
+    double data;
+    nodeDouble* next;
+};
+
+class StackDouble {
+    private:
+    nodeDouble* top;
+
+    public:
+    StackDouble() { top = nullptr;}
+
+    bool isEmpty() {
+        return top == nullptr;
+    }
+
+    double pop() {
+        double value;
+        if(!isEmpty()) {
+            nodeDouble* temp = top;
+            value = temp->data;
+            top = top -> next;
+            delete temp;
+        }
+        
+        return value;
+    }
+
+    double Top() {
+        double ret;
+        if(!isEmpty()) {
+            ret = top->data;
+        }
+        return ret;
+    }
+    
+    void add(double value) {
+        nodeDouble* newNode = new nodeDouble;
+        newNode -> data = value;
+        newNode -> next = top;
+        top = newNode;
+    }
+
+    int getSize() {
+        int size = 0;
+        nodeDouble* current = top;
+        while(current != nullptr) {
+            size++;
+            current = current -> next;
+        }
+        return size;
+    }
+
+
+};
+
     bool isOperand(char x) {
         return  x == '0' || x == '1' ||x== '2'|| x == '3'|| x == '4'|| x == '5'|| x == '6'|| x == '7'|| x == '8'|| x == '9';
     }
@@ -79,23 +138,23 @@ class Stack{
         return -1;
     }
  //Part Two: Write function that converts an expression in infix to postfix format
-    void infix2postfix(string infix, string& result) {
-        Stack stack;
+string infix2postfix(string infix) {
+    Stack stack;
+    string postfix = "";
 
-        for( int i = 0; i < infix.size(); i++) {
-            //If scanned character is an operand, output it 
-            if(isOperand(infix[i])) {
-                result += (infix[i]);   
-            }
-            else {
+    for( int i = 0; i < infix.size(); i++) {
+        //If scanned character is an operand, output it 
+        if(isOperand(infix[i])) {
+            postfix += (infix[i]);   
+        }
+        else {
             if(infix[i] == '(') {
                 stack.add(infix[i]);
             }
-
-
+                    
             if(infix[i] == ')') {
                 while(!stack.isEmpty() && stack.Top() != '(') {
-                    result+= stack.Top();
+                    postfix+= stack.Top();
                     stack.pop();
                 }
                 if(!stack.isEmpty() && stack.Top() == '(') {
@@ -103,29 +162,93 @@ class Stack{
                 }
             }
 
-
             if(isOperator(infix[i])) {
                 if (stack.isEmpty()) {
                     stack.add(infix[i]);
                 }
                 else {
                     while(!stack.isEmpty() && (precedence(infix[i]) <= precedence(stack.Top()))) {
-                        result+=stack.Top();
+                        postfix+=stack.Top();
                         stack.pop();
                     }
                     stack.add(infix[i]);
                 }
             }
         }
-        while(!stack.isEmpty()) {
-            result += stack.Top();
-            stack.pop();
-        }
 
     }
+    while(!stack.isEmpty()) {
+        postfix += stack.Top();
+        stack.pop();
+    }
+
+    return postfix;
 }
 
+double operation(double a, double b, char op) {
+        double result = 0.0;
 
+        switch(op) {
+            case '+':
+            result = a+b;
+            break;
+            case '-':
+            result = a-b;
+            break;
+            case '*':
+            result = a*b;
+            break;
+            case '/':
+            result = b/a;
+            break;
+            case '^':
+            result = pow(a,b);
+            break;
+        }
+
+        return result;
+    }
+
+    
+
+
+    double evalPostfix (string postfix) {
+        StackDouble stack;
+        double answer = 0.0;
+        
+        for( int i = 0; i < postfix.size(); i++) {
+            //If element is a number, push to stack
+            
+            if(isOperand(postfix[i])) {
+                double num = static_cast<double>(postfix[i] - '0');
+                stack.add(num);
+            }
+
+            //if element is an operator, pop operands for the operator from the stack 
+            if(isOperator(postfix[i])) {
+                if(!stack.isEmpty()) {
+                    double op1 = stack.Top();
+                    stack.pop();
+
+                    double op2 = stack.Top();
+                    stack.pop();
+
+                    double result = operation(op2, op1, postfix[i]);
+                    stack.add(result);
+                }
+                
+            }
+        }
+
+        if(stack.getSize() == 1) {
+            answer = stack.Top();
+        }
+        else {
+            cout << "nv";
+        }
+
+        return answer;
+    }
 
 
 
@@ -139,12 +262,32 @@ int main(int argc, char** argv) {
     string expression = argv[2];
     string output = argv[3];
 
+    // int dot = output.find('.');
+    // string outputName;
+    // outputName = output.substr(0,dot) + ".txt";
+
     ofstream outputFile(output);
 
-    string postfix = "";
+    string postfix;
     if(part == 2) {
-        infix2postfix(expression,postfix);
+        postfix = infix2postfix(expression);
         outputFile << postfix << endl;
+        cout << postfix << endl;
     }
+
+    double product;
+    if( part == 3 ) {
+        product = evalPostfix(expression);
+        if(product == 0.0) {
+            outputFile << "nv" << endl;
+            cout << "nv" << endl;
+        }
+        else {
+            outputFile << fixed << setprecision(1) << product << endl;
+            cout << fixed << setprecision(1) << product << endl;
+        }
+    }
+
+    outputFile.close();
 
 }
